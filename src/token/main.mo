@@ -1,5 +1,6 @@
 import Principal "mo:base/Principal"; // To use the Principal Data Type.
 import HashMap "mo:base/HashMap";
+import Debug "mo:base/Debug";
 
 actor Token {
 
@@ -11,7 +12,7 @@ actor Token {
 
     //Using HashMap to create a ledger  that is going to store the id of a particular user or canister. 
     //The key for the HashMap will be the principal which will be linked to the value of the custom token they own which is a natural number.
-    //We then initialize the HashMap with three inputs, the first one is the initial size of the hashmap, the second it the method used to check the equality of the keys and the third one is how the hashmap should hash the keys.
+    //We then initialize the HashMap with three inputs, the first one is the initial size of the hashmap, the second is the method used to check the equality of the keys and the third one is how the hashmap should hash the keys.
     var balances = HashMap.HashMap<Principal, Nat>(1, Principal.equal, Principal.hash);
 
     //Adding the owner to the ledger as the first entry.
@@ -24,6 +25,25 @@ actor Token {
         case (?result) result;//if it's an optional result return the very result
     };
     return balance;
-    }
+    };
+
+    //Creating a function that will return the symbol
+    public query func getSymbol() : async Text {
+        return symbol;
+    };
+
+    //Creating a shared function payOut with parameter of msg
+    public shared(msg) func payOut() : async Text {
+        Debug.print(debug_show(msg.caller));
+        // Assigning to whomever calls the payOut method 10000 coins (coins or tokens) only if they have never claimed the free amount. We do this by checking if msg.caller exists in the ledger.
+        if (balances.get(msg.caller) == null) {
+           let amount = 10000;
+           balances.put(msg.caller, amount);//msg.caller is the user of the website at the moment.
+           return "Success";
+        } else {
+            return "You have already claimed your free coins"
+        }
+
+    };
 
 };
