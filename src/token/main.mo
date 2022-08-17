@@ -20,11 +20,11 @@ actor Token {
 
     //Creating a check balance method to see who owns how much. 
     public query func balanceOf(who: Principal) : async Nat {      
-        let balance : Nat = switch (balances.get(who)) {
-        case null 0;//if it's null return zero
-        case (?result) result;//if it's an optional result return the very result
-    };
-    return balance;
+            let balance : Nat = switch (balances.get(who)) {
+            case null 0;//if it's null return zero
+            case (?result) result;//if it's an optional result return the very result
+        };
+        return balance;
     };
 
     //Creating a function that will return the symbol
@@ -44,6 +44,31 @@ actor Token {
             return "You have already claimed your free coins"
         }
 
+    };
+    //Creating the transfer functionality using a public shared function.
+    //The first parameter of the function is the principal while the second is the amount to transfer.
+    //The id where the amount will be transferred from will be found thanks to msg.
+    public shared(msg) func transfer(to: Principal, amount: Nat) : async Text {
+        //Getting the amount that is to be transferred
+        let fromBalance = await balanceOf(msg.caller);
+        //Checking if they have enough amount of coins
+        if (fromBalance > amount) {
+            //Calculating the new amount to subtract from the user's ledger during the transaction.
+            let newFromBalance : Nat = fromBalance - amount;
+            //Updating the balance to the new amount for the user (msg.caller).
+            balances.put(msg.caller, newFromBalance);
+            //Getting the receiver's balance.
+            let toBalance = await balanceOf(to); 
+            //Calculating the new balance for the receiver of the transaction
+            let newToBalance = toBalance + amount;
+            //Updating the receiver's balance
+            balances.put(to, newToBalance);
+            
+            return "Success";
+        } else {
+            return "Insufficient Funds";
+        }
+        
     };
 
 };
