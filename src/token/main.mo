@@ -38,8 +38,9 @@ actor Token {
         // Assigning to whomever calls the payOut method 10000 coins (coins or tokens) only if they have never claimed the free amount. We do this by checking if msg.caller exists in the ledger.
         if (balances.get(msg.caller) == null) {
            let amount = 10000;
-           balances.put(msg.caller, amount);//msg.caller is the user of the website at the moment.
-           return "Success";
+           //Transferring the 10000 coins from the canister to the user (the claimant).
+           let result = await transfer(msg.caller, 10000);//msg.caller is the user of the website at the moment.
+           return result;
         } else {
             return "You have already claimed your free coins"
         }
