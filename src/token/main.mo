@@ -1,22 +1,28 @@
 import Principal "mo:base/Principal"; // To use the Principal Data Type.
 import HashMap "mo:base/HashMap";
 import Debug "mo:base/Debug";
+import Iter "mo:base/Iter";
 
 actor Token {
-
+    //Debug.print("Hello.");
     //Creating a variable of type Principle.
     //Converting the principle id from text to principle data type using the function fromText();
-    var owner : Principal = Principal.fromText("2qv2o-owgj3-hsfse-y7qjv-j5xwz-vi573-rokcm-cm6u7-uwith-yuolg-uae"); 
-    var totalSupply : Nat = 1000000000; //The total supply of our particular token.
-    var symbol : Text = "DMAG"; //Giving a symbol to our token.
+    let owner : Principal = Principal.fromText("2qv2o-owgj3-hsfse-y7qjv-j5xwz-vi573-rokcm-cm6u7-uwith-yuolg-uae"); 
+    let totalSupply : Nat = 1000000000; //The total supply of our particular token.
+    let symbol : Text = "DMAG"; //Giving a symbol to our token.
+
+    //Creating a stable array that will hold the data of the HashMap since the hashMap can't be stable.
+    //We're going to use the HashMap instead of the array because it is more efficient when searching data in it.
+    private stable var balanceEntries: [(Principal, Nat)] = [];
 
     //Using HashMap to create a ledger  that is going to store the id of a particular user or canister. 
-    //The key for the HashMap will be the principal which will be linked to the value of the custom token they own which is a natural number.
-    //We then initialize the HashMap with three inputs, the first one is the initial size of the hashmap, the second is the method used to check the equality of the keys and the third one is how the hashmap should hash the keys.
-    var balances = HashMap.HashMap<Principal, Nat>(1, Principal.equal, Principal.hash);
-
-    //Adding the owner to the ledger as the first entry.
-    balances.put(owner, totalSupply);
+    /* The key for the HashMap will be the principal which will be linked to the value of the custom token they own which is a natural number.
+    We then initialize the HashMap with three inputs, the first one is the initial size of the hashmap, the second is the method used to check the equality of the keys and the third one is how the hashmap should hash the keys. */
+    private var balances = HashMap.HashMap<Principal, Nat>(1, Principal.equal, Principal.hash);
+        //If we have an empty balance we add the owner to the ledger as the first entry.
+    if (balances.size() < 1){
+        balances.put(owner, totalSupply);
+    };
 
     //Creating a check balance method to see who owns how much. 
     public query func balanceOf(who: Principal) : async Nat {      
@@ -72,4 +78,18 @@ actor Token {
         
     };
 
+    //Using the preupgrade() to push the data of the HashMap to the stable balanceEntries array before the upgrade of the canister 
+    system func preupgrade() {
+        //Converting the HashMap to an array and assigning it to balanceEntries
+        balanceEntries := Iter.toArray(balances.entries()); //To iterate over the HashMap we have to use the entries() method
+    }; 
+ 
+    //Using the postupgrade() system method to retrieve data from the balanceEntries array after the upgrade
+    system func postupgrade() {
+        balances := HashMap.fromIter<Principal, Nat>(balanceEntries.vals(), 1, Principal.equal, Principal.hash);
+        //If we have an empty balance we add the owner to the ledger as the first entry.
+        if (balances.size() < 1){
+            balances.put(owner, totalSupply);
+        }
+    };
 };
